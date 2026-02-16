@@ -11,7 +11,8 @@ export interface Pool {
   apyRewardBorrow: number;
   apyBorrow: number;
   ltv: number;
-  category: string;
+  totalSupplyUsd: number;
+  totalBorrowUsd: number;
   stablecoin: boolean;
 }
 

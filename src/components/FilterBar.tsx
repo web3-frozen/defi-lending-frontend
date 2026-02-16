@@ -13,6 +13,10 @@ const CHAIN_LABELS: Record<string, string> = {
   avalanche: "Avalanche",
   sui: "Sui",
   aptos: "Aptos",
+  bsc: "BSC",
+  base: "Base",
+  hyperliquid: "Hyperliquid",
+  arbitrum: "Arbitrum",
 };
 
 const MIN_TVL_OPTIONS = [

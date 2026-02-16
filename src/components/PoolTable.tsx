@@ -14,6 +14,10 @@ const CHAIN_COLORS: Record<string, string> = {
   avalanche: "#e84142",
   sui: "#4da2ff",
   aptos: "#2ed8a3",
+  bsc: "#f0b90b",
+  base: "#0052ff",
+  hyperliquid: "#00e5a0",
+  arbitrum: "#28a0f0",
 };
 
 function formatUSD(value: number): string {
