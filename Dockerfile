@@ -6,7 +6,13 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.29-alpine
+
+# Patch OS packages in the nginx base image (trivy CRITICAL/HIGH gate)
+USER root
+RUN apk update --no-cache && apk upgrade --no-cache
+USER nginx
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 USER nginx
