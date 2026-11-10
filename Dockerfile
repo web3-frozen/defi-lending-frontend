@@ -6,7 +6,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 # Patch OS packages in the nginx base image (trivy CRITICAL/HIGH gate)
 USER root
