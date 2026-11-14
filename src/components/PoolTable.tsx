@@ -1,4 +1,5 @@
-import type { Pool, SortField, SortOrder } from "../types";
+import { useState } from "react";
+import type { Filters, Pool, SortField, SortOrder } from "../types";
 import { chainLabel, formatPct, formatUSD } from "../lib/format";
 
 interface PoolTableProps {
@@ -8,6 +9,7 @@ interface PoolTableProps {
   onToggleSort: (field: SortField) => void;
   onClearFilters?: () => void;
   canClear?: boolean;
+  filters?: Filters;
 }
 
 function SortMark({ active, order }: { active: boolean; order: SortOrder }) {
@@ -141,7 +143,83 @@ function ProtocolCell({ pool }: { pool: Pool }) {
   );
 }
 
-export function PoolTable({ pools, sortBy, order, onToggleSort, onClearFilters, canClear = false }: PoolTableProps) {
+function escapeCell(value: string): string {
+  return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+function rateValue(value: number | null): string {
+  return value == null ? "\u2014" : formatPct(value);
+}
+
+function filterSummary(filters?: Filters): string {
+  if (!filters) return "";
+  const parts: string[] = [];
+  if (filters.chain) parts.push(`chain=${filters.chain}`);
+  if (filters.symbols.length > 0) parts.push(`assets=${filters.symbols.join(", ")}`);
+  if (filters.assetClass) parts.push(`stablecoins=${filters.assetClass}`);
+  if (filters.minTvl > 0) parts.push(`minTVL=${formatUSD(filters.minTvl)}`);
+  parts.push(`sort=${filters.sortBy} ${filters.order}`);
+  parts.push(`rows=${filters.limit}`);
+  return parts.join("; ");
+}
+
+function toMarkdown(pools: Pool[], filters?: Filters): string {
+  const lines = [
+    "# DeFi lending rates",
+    "",
+    `Filters: ${filterSummary(filters) || "none"}`,
+    `Rows: ${pools.length}`,
+    "",
+    "| # | Protocol | Asset | Chain | TVL | Supply base | Supply reward | Supply total | Borrow interest | Borrow reward | Borrow total | LTV |",
+    "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+  ];
+
+  pools.forEach((pool, index) => {
+    const protocol = escapeCell(pool.protocolName ?? pool.project);
+    const protocolCell = [
+      pool.protocolUrl ? `[${protocol}](${pool.protocolUrl})` : protocol,
+      pool.protocolTwitter ? `[X](${pool.protocolTwitter})` : "",
+      pool.protocolGithub ? `[GitHub](${pool.protocolGithub})` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    lines.push(
+      `| ${index + 1} | ${protocolCell} | ${escapeCell(pool.symbol)} | ${escapeCell(chainLabel(pool.chain))} | ${formatUSD(pool.tvl)} | ${rateValue(pool.apyBase)} | ${rateValue(pool.apyReward)} | ${formatPct(pool.apy)} | ${rateValue(pool.apyBaseBorrow)} | ${rateValue(pool.apyRewardBorrow)} | ${formatPct(pool.apyBorrow)} | ${pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"} |`
+    );
+  });
+
+  return `${lines.join("\n")}\n`;
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+export function PoolTable({
+  pools,
+  sortBy,
+  order,
+  onToggleSort,
+  onClearFilters,
+  canClear = false,
+  filters,
+}: PoolTableProps) {
+  const [copied, setCopied] = useState(false);
+
   if (pools.length === 0) {
     return (
       <div className="empty-state" role="status">
@@ -156,54 +234,69 @@ export function PoolTable({ pools, sortBy, order, onToggleSort, onClearFilters, 
   }
 
   return (
-    <div className="table-container">
-      <table className="pool-table">
-        <thead>
-          <tr>
-            <th className="rank">#</th>
-            <th>Protocol</th>
-            <th>Asset</th>
-            <th>Chain</th>
-            <SortHeader field="tvl" label="TVL" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
-            <SortHeader
-              field="apy"
-              label="Supply"
-              hint="base + reward"
-              numeric
-              sortBy={sortBy}
-              order={order}
-              onToggleSort={onToggleSort}
-            />
-            <SortHeader
-              field="apyBorrow"
-              label="Borrow"
-              hint={"interest \u2212 reward"}
-              numeric
-              sortBy={sortBy}
-              order={order}
-              onToggleSort={onToggleSort}
-            />
-            <SortHeader field="ltv" label="LTV" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
-          </tr>
-        </thead>
-        <tbody>
-          {pools.map((pool, idx) => (
-            <tr key={pool.id}>
-              <td className="rank">{idx + 1}</td>
-              <ProtocolCell pool={pool} />
-              <td className="symbol">
-                {pool.symbol}
-                {pool.stablecoin && <span className="stable-mark">Stable</span>}
-              </td>
-              <td>{chainLabel(pool.chain)}</td>
-              <td className="number">{formatUSD(pool.tvl)}</td>
-              <RateCell base={pool.apyBase} reward={pool.apyReward} total={pool.apy} kind="supply" />
-              <RateCell base={pool.apyBaseBorrow} reward={pool.apyRewardBorrow} total={pool.apyBorrow} kind="borrow" />
-              <td className="number">{pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"}</td>
+    <div className="table-block">
+      <div className="table-actions">
+        <button
+          type="button"
+          className="copy-table-button"
+          onClick={async () => {
+            await copyText(toMarkdown(pools, filters));
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+          }}
+        >
+          {copied ? "Copied" : "Copy table"}
+        </button>
+      </div>
+      <div className="table-container">
+        <table className="pool-table">
+          <thead>
+            <tr>
+              <th className="rank">#</th>
+              <th>Protocol</th>
+              <th>Asset</th>
+              <th>Chain</th>
+              <SortHeader field="tvl" label="TVL" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
+              <SortHeader
+                field="apy"
+                label="Supply"
+                hint="base + reward"
+                numeric
+                sortBy={sortBy}
+                order={order}
+                onToggleSort={onToggleSort}
+              />
+              <SortHeader
+                field="apyBorrow"
+                label="Borrow"
+                hint={"interest \u2212 reward"}
+                numeric
+                sortBy={sortBy}
+                order={order}
+                onToggleSort={onToggleSort}
+              />
+              <SortHeader field="ltv" label="LTV" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {pools.map((pool, idx) => (
+              <tr key={pool.id}>
+                <td className="rank">{idx + 1}</td>
+                <ProtocolCell pool={pool} />
+                <td className="symbol">
+                  {pool.symbol}
+                  {pool.stablecoin && <span className="stable-mark">Stable</span>}
+                </td>
+                <td>{chainLabel(pool.chain)}</td>
+                <td className="number">{formatUSD(pool.tvl)}</td>
+                <RateCell base={pool.apyBase} reward={pool.apyReward} total={pool.apy} kind="supply" />
+                <RateCell base={pool.apyBaseBorrow} reward={pool.apyRewardBorrow} total={pool.apyBorrow} kind="borrow" />
+                <td className="number">{pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
