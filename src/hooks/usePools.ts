@@ -21,20 +21,26 @@ export function usePools() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasData = useRef(false);
+  const requestId = useRef(0);
 
   const loadPools = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     if (hasData.current) setRefreshing(true);
     else setLoading(true);
     setError(null);
     try {
       const res = await fetchPools(filters);
+      if (currentRequest !== requestId.current) return;
       setPools(res.data);
       hasData.current = true;
     } catch {
+      if (currentRequest !== requestId.current) return;
       setError("Unable to load rates. Check your connection and try again.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [filters]);
 
