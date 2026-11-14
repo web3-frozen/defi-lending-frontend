@@ -196,6 +196,33 @@ body {
   color: var(--ink);
 }
 
+.asset-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.asset-add:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.asset-add:disabled {
+  color: var(--placeholder);
+  background: transparent;
+  cursor: default;
+}
+
 .filter-group select {
   cursor: pointer;
 }
@@ -258,6 +285,7 @@ body {
 
 .table-container {
   overflow: auto;
+  scrollbar-gutter: stable;
   border: 1px solid var(--line);
   border-radius: var(--radius-sheet);
   background: var(--surface);
@@ -293,6 +321,14 @@ body {
 .pool-table td.number {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pool-table th:last-child,
+.pool-table td:last-child {
+  min-width: 6rem;
+  padding-right: 1.15rem;
+  white-space: nowrap;
 }
 
 .pool-table thead th:has(.sort-button) {

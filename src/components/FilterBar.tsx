@@ -42,6 +42,15 @@ export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBa
     onFilterChange({ symbols: filters.symbols.filter((item) => item !== symbol) });
   };
 
+  const commitExactDraft = () => {
+    const match = symbols.find(
+      (item) => item.symbol.toLowerCase() === symbolDraft.trim().toLowerCase()
+    );
+    if (match) {
+      addSymbols([match.symbol]);
+    }
+  };
+
   const filtersActive =
     filters.chain !== "" ||
     filters.symbols.length > 0 ||
@@ -94,6 +103,7 @@ export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBa
             value={symbolDraft}
             list="asset-suggestions"
             onChange={(e) => setSymbolDraft(e.target.value)}
+            onBlur={commitExactDraft}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === ",") {
                 if (!symbolDraft.trim()) return;
@@ -109,6 +119,16 @@ export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBa
               }
             }}
           />
+          <button
+            type="button"
+            className="asset-add"
+            aria-label="Add asset"
+            disabled={!symbolDraft.trim()}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => addSymbols([symbolDraft])}
+          >
+            <span aria-hidden="true">+</span>
+          </button>
         </div>
         <datalist id="asset-suggestions">
           {symbols.map((item) => (
