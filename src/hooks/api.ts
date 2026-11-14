@@ -5,8 +5,8 @@ const BASE_URL = "/api";
 export async function fetchPools(filters: Filters): Promise<PoolsResponse> {
   const params = new URLSearchParams();
   if (filters.chain) params.set("chain", filters.chain);
-  const symbol = filters.symbol.trim();
-  if (symbol) params.set("symbol", symbol);
+  const symbols = filters.symbols.map((symbol) => symbol.trim()).filter(Boolean);
+  if (symbols.length > 0) params.set("symbols", symbols.join(","));
   if (filters.assetClass === "stable") params.set("stablecoin", "true");
   if (filters.assetClass === "other") params.set("stablecoin", "false");
   params.set("sort", filters.sortBy);

@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FilterBar } from "../components/FilterBar";
-import type { Filters, ChainInfo } from "../types";
+import type { Filters, ChainInfo, SymbolInfo } from "../types";
 
 const mockChains: ChainInfo[] = [
   { name: "ethereum", poolCount: 100 },
   { name: "solana", poolCount: 50 },
 ];
 
+const mockSymbols: SymbolInfo[] = [
+  { symbol: "USDC", poolCount: 20 },
+  { symbol: "ETH", poolCount: 15 },
+];
+
 const defaultFilters: Filters = {
   chain: "",
-  symbol: "",
+  symbols: [],
   assetClass: "",
   sortBy: "tvl",
   order: "desc",
@@ -50,5 +55,45 @@ describe("FilterBar", () => {
     render(<FilterBar filters={defaultFilters} chains={mockChains} symbols={[]} onFilterChange={onFilterChange} />);
     await userEvent.selectOptions(screen.getByLabelText("Stablecoins"), "stable");
     expect(onFilterChange).toHaveBeenCalledWith({ assetClass: "stable" });
+  });
+
+  it("adds multiple assets as chips", async () => {
+    const { rerender } = render(
+      <FilterBar
+        filters={defaultFilters}
+        chains={mockChains}
+        symbols={mockSymbols}
+        onFilterChange={onFilterChange}
+      />
+    );
+
+    await userEvent.type(screen.getByLabelText("Assets"), "USDC{Enter}");
+    expect(onFilterChange).toHaveBeenCalledWith({ symbols: ["USDC"] });
+
+    rerender(
+      <FilterBar
+        filters={{ ...defaultFilters, symbols: ["USDC"] }}
+        chains={mockChains}
+        symbols={mockSymbols}
+        onFilterChange={onFilterChange}
+      />
+    );
+
+    await userEvent.type(screen.getByLabelText("Assets"), "ETH{Enter}");
+    expect(onFilterChange).toHaveBeenLastCalledWith({ symbols: ["USDC", "ETH"] });
+  });
+
+  it("removes a selected asset chip", async () => {
+    render(
+      <FilterBar
+        filters={{ ...defaultFilters, symbols: ["USDC"] }}
+        chains={mockChains}
+        symbols={mockSymbols}
+        onFilterChange={onFilterChange}
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove USDC" }));
+    expect(onFilterChange).toHaveBeenCalledWith({ symbols: [] });
   });
 });

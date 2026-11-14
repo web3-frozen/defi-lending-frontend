@@ -101,6 +101,46 @@ function RateCell({
   );
 }
 
+function ProtocolCell({ pool }: { pool: Pool }) {
+  const name = pool.protocolName ?? pool.project;
+
+  return (
+    <td className="project">
+      {pool.protocolUrl ? (
+        <a href={pool.protocolUrl} target="_blank" rel="noreferrer">
+          {name}
+        </a>
+      ) : (
+        <span>{name}</span>
+      )}
+      {(pool.protocolTwitter || pool.protocolGithub) && (
+        <span className="protocol-links">
+          {pool.protocolTwitter && (
+            <a
+              href={pool.protocolTwitter}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${name} on X`}
+            >
+              X
+            </a>
+          )}
+          {pool.protocolGithub && (
+            <a
+              href={pool.protocolGithub}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${name} on GitHub`}
+            >
+              GitHub
+            </a>
+          )}
+        </span>
+      )}
+    </td>
+  );
+}
+
 export function PoolTable({ pools, sortBy, order, onToggleSort, onClearFilters, canClear = false }: PoolTableProps) {
   if (pools.length === 0) {
     return (
@@ -150,7 +190,7 @@ export function PoolTable({ pools, sortBy, order, onToggleSort, onClearFilters, 
           {pools.map((pool, idx) => (
             <tr key={pool.id}>
               <td className="rank">{idx + 1}</td>
-              <td className="project">{pool.project}</td>
+              <ProtocolCell pool={pool} />
               <td className="symbol">
                 {pool.symbol}
                 {pool.stablecoin && <span className="stable-mark">Stable</span>}
