@@ -11,6 +11,8 @@ const mockChains: ChainInfo[] = [
 
 const defaultFilters: Filters = {
   chain: "",
+  symbol: "",
+  assetClass: "",
   sortBy: "tvl",
   order: "desc",
   minTvl: 0,
@@ -25,22 +27,28 @@ describe("FilterBar", () => {
   });
 
   it("renders chain options", () => {
-    render(<FilterBar filters={defaultFilters} chains={mockChains} onFilterChange={onFilterChange} />);
-    expect(screen.getByText("All Chains")).toBeInTheDocument();
+    render(<FilterBar filters={defaultFilters} chains={mockChains} symbols={[]} onFilterChange={onFilterChange} />);
+    expect(screen.getByText("All chains")).toBeInTheDocument();
     expect(screen.getByText("Ethereum (100)")).toBeInTheDocument();
     expect(screen.getByText("Solana (50)")).toBeInTheDocument();
   });
 
   it("calls onFilterChange when chain is selected", async () => {
-    render(<FilterBar filters={defaultFilters} chains={mockChains} onFilterChange={onFilterChange} />);
+    render(<FilterBar filters={defaultFilters} chains={mockChains} symbols={[]} onFilterChange={onFilterChange} />);
     const select = screen.getByLabelText("Chain");
     await userEvent.selectOptions(select, "ethereum");
     expect(onFilterChange).toHaveBeenCalledWith({ chain: "ethereum" });
   });
 
   it("renders TVL options", () => {
-    render(<FilterBar filters={defaultFilters} chains={mockChains} onFilterChange={onFilterChange} />);
-    expect(screen.getByText("All")).toBeInTheDocument();
+    render(<FilterBar filters={defaultFilters} chains={mockChains} symbols={[]} onFilterChange={onFilterChange} />);
+    expect(screen.getByText("Any size")).toBeInTheDocument();
     expect(screen.getByText("> $1M")).toBeInTheDocument();
+  });
+
+  it("filters to stablecoins", async () => {
+    render(<FilterBar filters={defaultFilters} chains={mockChains} symbols={[]} onFilterChange={onFilterChange} />);
+    await userEvent.selectOptions(screen.getByLabelText("Stablecoins"), "stable");
+    expect(onFilterChange).toHaveBeenCalledWith({ assetClass: "stable" });
   });
 });

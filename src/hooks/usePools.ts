@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import type { Pool, ChainInfo, Filters } from "../types";
-import { fetchPools, fetchChains } from "./api";
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { Pool, ChainInfo, SymbolInfo, Filters } from "../types";
+import { fetchPools, fetchChains, fetchSymbols } from "./api";
 
-const DEFAULT_FILTERS: Filters = {
+export const DEFAULT_FILTERS: Filters = {
   chain: "",
+  symbol: "",
+  assetClass: "",
   sortBy: "tvl",
   order: "desc",
   minTvl: 0,
@@ -13,20 +15,26 @@ const DEFAULT_FILTERS: Filters = {
 export function usePools() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [chains, setChains] = useState<ChainInfo[]>([]);
+  const [symbols, setSymbols] = useState<SymbolInfo[]>([]);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasData = useRef(false);
 
   const loadPools = useCallback(async () => {
-    setLoading(true);
+    if (hasData.current) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     try {
       const res = await fetchPools(filters);
       setPools(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch pools");
+      hasData.current = true;
+    } catch {
+      setError("Unable to load rates. Check your connection and try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [filters]);
 
@@ -37,6 +45,9 @@ export function usePools() {
   useEffect(() => {
     fetchChains()
       .then(setChains)
+      .catch(() => {});
+    fetchSymbols()
+      .then(setSymbols)
       .catch(() => {});
   }, []);
 
@@ -55,5 +66,16 @@ export function usePools() {
     [filters.sortBy, filters.order, updateFilters]
   );
 
-  return { pools, chains, filters, loading, error, updateFilters, toggleSort, refresh: loadPools };
+  return {
+    pools,
+    chains,
+    symbols,
+    filters,
+    loading,
+    refreshing,
+    error,
+    updateFilters,
+    toggleSort,
+    refresh: loadPools,
+  };
 }

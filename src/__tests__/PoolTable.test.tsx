@@ -31,8 +31,8 @@ const mockPools: Pool[] = [
     apyReward: 1.0,
     apy: 7.0,
     apyBaseBorrow: 8.0,
-    apyRewardBorrow: 0,
-    apyBorrow: 8.0,
+    apyRewardBorrow: 0.25,
+    apyBorrow: 7.75,
     ltv: 0.65,
     totalSupplyUsd: 500_000,
     totalBorrowUsd: 200_000,
@@ -47,6 +47,20 @@ describe("PoolTable", () => {
     expect(screen.getByText("marginfi")).toBeInTheDocument();
   });
 
+  it("shows the supply equation as base plus reward", () => {
+    render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
+    expect(
+      screen.getByRole("cell", { name: "3.50% base plus 0.50% reward, total 4.00%" })
+    ).toBeInTheDocument();
+  });
+
+  it("shows borrow as interest minus reward", () => {
+    render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
+    expect(
+      screen.getByRole("cell", { name: "8.00% interest minus 0.25% reward, total 7.75%" })
+    ).toBeInTheDocument();
+  });
+
   it("shows stablecoin badge", () => {
     render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
     expect(screen.getByText("Stable")).toBeInTheDocument();
@@ -54,7 +68,7 @@ describe("PoolTable", () => {
 
   it("shows empty state when no pools", () => {
     render(<PoolTable pools={[]} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
-    expect(screen.getByText(/no lending pools found/i)).toBeInTheDocument();
+    expect(screen.getByText(/no lending pools are available/i)).toBeInTheDocument();
   });
 
   it("formats TVL correctly", () => {
@@ -63,9 +77,9 @@ describe("PoolTable", () => {
     expect(screen.getByText("$500.0K")).toBeInTheDocument();
   });
 
-  it("displays chain badges", () => {
+  it("displays chain names", () => {
     render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
-    expect(screen.getByText("ethereum")).toBeInTheDocument();
-    expect(screen.getByText("solana")).toBeInTheDocument();
+    expect(screen.getByText("Ethereum")).toBeInTheDocument();
+    expect(screen.getByText("Solana")).toBeInTheDocument();
   });
 });

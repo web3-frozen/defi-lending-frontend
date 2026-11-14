@@ -1,10 +1,14 @@
-import type { PoolsResponse, ChainInfo, Filters } from "../types";
+import type { PoolsResponse, ChainInfo, SymbolInfo, Filters } from "../types";
 
 const BASE_URL = "/api";
 
 export async function fetchPools(filters: Filters): Promise<PoolsResponse> {
   const params = new URLSearchParams();
   if (filters.chain) params.set("chain", filters.chain);
+  const symbol = filters.symbol.trim();
+  if (symbol) params.set("symbol", symbol);
+  if (filters.assetClass === "stable") params.set("stablecoin", "true");
+  if (filters.assetClass === "other") params.set("stablecoin", "false");
   params.set("sort", filters.sortBy);
   params.set("order", filters.order);
   params.set("limit", String(filters.limit));
@@ -17,6 +21,13 @@ export async function fetchPools(filters: Filters): Promise<PoolsResponse> {
 
 export async function fetchChains(): Promise<ChainInfo[]> {
   const res = await fetch(`${BASE_URL}/chains`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  return data.data;
+}
+
+export async function fetchSymbols(): Promise<SymbolInfo[]> {
+  const res = await fetch(`${BASE_URL}/symbols`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   const data = await res.json();
   return data.data;

@@ -4,11 +4,11 @@ export interface Pool {
   project: string;
   symbol: string;
   tvl: number;
-  apyBase: number;
-  apyReward: number;
+  apyBase: number | null;
+  apyReward: number | null;
   apy: number;
-  apyBaseBorrow: number;
-  apyRewardBorrow: number;
+  apyBaseBorrow: number | null;
+  apyRewardBorrow: number | null;
   apyBorrow: number;
   ltv: number;
   totalSupplyUsd: number;
@@ -26,6 +26,11 @@ export interface ChainInfo {
   poolCount: number;
 }
 
+export interface SymbolInfo {
+  symbol: string;
+  poolCount: number;
+}
+
 export interface ProtocolInfo {
   name: string;
   totalTvl: number;
@@ -33,9 +38,12 @@ export interface ProtocolInfo {
 
 export type SortField = "tvl" | "apy" | "apyBorrow" | "ltv";
 export type SortOrder = "asc" | "desc";
+export type AssetClass = "" | "stable" | "other";
 
 export interface Filters {
   chain: string;
+  symbol: string;
+  assetClass: AssetClass;
   sortBy: SortField;
   order: SortOrder;
   minTvl: number;

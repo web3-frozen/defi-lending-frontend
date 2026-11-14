@@ -1,44 +1,118 @@
 import type { Pool, SortField, SortOrder } from "../types";
+import { chainLabel, formatPct, formatUSD } from "../lib/format";
 
 interface PoolTableProps {
   pools: Pool[];
   sortBy: SortField;
   order: SortOrder;
   onToggleSort: (field: SortField) => void;
+  onClearFilters?: () => void;
+  canClear?: boolean;
 }
 
-const CHAIN_COLORS: Record<string, string> = {
-  ethereum: "#627eea",
-  solana: "#9945ff",
-  polygon: "#8247e5",
-  avalanche: "#e84142",
-  sui: "#4da2ff",
-  aptos: "#2ed8a3",
-  bsc: "#f0b90b",
-  base: "#0052ff",
-  hyperliquid: "#00e5a0",
-  arbitrum: "#28a0f0",
-};
-
-function formatUSD(value: number): string {
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toFixed(0)}`;
+function SortMark({ active, order }: { active: boolean; order: SortOrder }) {
+  if (!active) return null;
+  return (
+    <span className="sort-icon" aria-hidden="true">
+      {order === "desc" ? "\u2193" : "\u2191"}
+    </span>
+  );
 }
 
-function formatPct(value: number): string {
-  return `${value.toFixed(2)}%`;
+function SortHeader({
+  field,
+  label,
+  hint,
+  numeric,
+  sortBy,
+  order,
+  onToggleSort,
+}: {
+  field: SortField;
+  label: string;
+  hint?: string;
+  numeric?: boolean;
+  sortBy: SortField;
+  order: SortOrder;
+  onToggleSort: (field: SortField) => void;
+}) {
+  const active = sortBy === field;
+  return (
+    <th aria-sort={active ? (order === "asc" ? "ascending" : "descending") : "none"} className={numeric ? "num" : undefined}>
+      <button type="button" className={numeric ? "sort-button num" : "sort-button"} onClick={() => onToggleSort(field)}>
+        <span className="sort-line">
+          <span>{label}</span>
+          <SortMark active={active} order={order} />
+        </span>
+        {hint && <span className="col-hint">{hint}</span>}
+      </button>
+    </th>
+  );
 }
 
-function SortIcon({ field, sortBy, order }: { field: SortField; sortBy: SortField; order: SortOrder }) {
-  if (field !== sortBy) return <span className="sort-icon">⇅</span>;
-  return <span className="sort-icon active">{order === "desc" ? "↓" : "↑"}</span>;
+function RateCell({
+  base,
+  reward,
+  total,
+  kind,
+}: {
+  base: number | null;
+  reward: number | null;
+  total: number;
+  kind: "supply" | "borrow";
+}) {
+  const known = base != null || reward != null;
+  if (!known) {
+    const label = kind === "borrow" ? "Borrow rate not reported" : `${formatPct(total)}, breakdown not reported`;
+    return (
+      <td className="number rate" aria-label={label}>
+        {kind === "borrow" ? (
+          <span className="rate-missing">{"\u2014"}</span>
+        ) : (
+          <>
+            <span className="rate-total">{formatPct(total)}</span>
+            <span className="rate-note">Breakdown not reported</span>
+          </>
+        )}
+      </td>
+    );
+  }
+
+  const baseValue = base ?? 0;
+  const rewardValue = reward ?? 0;
+  const operator = kind === "supply" ? "+" : "\u2212";
+  const paid = kind === "borrow" && total < -0.005;
+  const label =
+    kind === "supply"
+      ? `${formatPct(baseValue)} base plus ${formatPct(rewardValue)} reward, total ${formatPct(total)}`
+      : `${formatPct(baseValue)} interest minus ${formatPct(rewardValue)} reward, total ${formatPct(total)}${paid ? ", paid to borrow" : ""}`;
+
+  return (
+    <td className="number rate" aria-label={label}>
+      <span className="rate-eq">
+        <span>{formatPct(baseValue)}</span>
+        <span className="rate-op" aria-hidden="true">{` ${operator} `}</span>
+        <span>{formatPct(rewardValue)}</span>
+        <span className="rate-op" aria-hidden="true"> = </span>
+        <span className="rate-total">{formatPct(total)}</span>
+      </span>
+      {paid && <span className="rate-note">Paid to borrow</span>}
+    </td>
+  );
 }
 
-export function PoolTable({ pools, sortBy, order, onToggleSort }: PoolTableProps) {
+export function PoolTable({ pools, sortBy, order, onToggleSort, onClearFilters, canClear = false }: PoolTableProps) {
   if (pools.length === 0) {
-    return <p className="empty-state">No lending pools found matching your filters.</p>;
+    return (
+      <div className="empty-state" role="status">
+        <p>{canClear ? "No lending pools match these filters." : "No lending pools are available right now."}</p>
+        {canClear && onClearFilters && (
+          <button type="button" className="text-button" onClick={onClearFilters}>
+            Clear filters
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -46,22 +120,30 @@ export function PoolTable({ pools, sortBy, order, onToggleSort }: PoolTableProps
       <table className="pool-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th className="rank">#</th>
             <th>Protocol</th>
             <th>Asset</th>
             <th>Chain</th>
-            <th className="sortable" onClick={() => onToggleSort("tvl")}>
-              TVL <SortIcon field="tvl" sortBy={sortBy} order={order} />
-            </th>
-            <th className="sortable" onClick={() => onToggleSort("apy")}>
-              Supply APY <SortIcon field="apy" sortBy={sortBy} order={order} />
-            </th>
-            <th className="sortable" onClick={() => onToggleSort("apyBorrow")}>
-              Borrow APY <SortIcon field="apyBorrow" sortBy={sortBy} order={order} />
-            </th>
-            <th className="sortable" onClick={() => onToggleSort("ltv")}>
-              LTV <SortIcon field="ltv" sortBy={sortBy} order={order} />
-            </th>
+            <SortHeader field="tvl" label="TVL" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
+            <SortHeader
+              field="apy"
+              label="Supply"
+              hint="base + reward"
+              numeric
+              sortBy={sortBy}
+              order={order}
+              onToggleSort={onToggleSort}
+            />
+            <SortHeader
+              field="apyBorrow"
+              label="Borrow"
+              hint={"interest \u2212 reward"}
+              numeric
+              sortBy={sortBy}
+              order={order}
+              onToggleSort={onToggleSort}
+            />
+            <SortHeader field="ltv" label="LTV" numeric sortBy={sortBy} order={order} onToggleSort={onToggleSort} />
           </tr>
         </thead>
         <tbody>
@@ -71,20 +153,13 @@ export function PoolTable({ pools, sortBy, order, onToggleSort }: PoolTableProps
               <td className="project">{pool.project}</td>
               <td className="symbol">
                 {pool.symbol}
-                {pool.stablecoin && <span className="badge stable">Stable</span>}
+                {pool.stablecoin && <span className="stable-mark">Stable</span>}
               </td>
-              <td>
-                <span
-                  className="chain-badge"
-                  style={{ backgroundColor: CHAIN_COLORS[pool.chain] ?? "#666" }}
-                >
-                  {pool.chain}
-                </span>
-              </td>
+              <td>{chainLabel(pool.chain)}</td>
               <td className="number">{formatUSD(pool.tvl)}</td>
-              <td className="number apy-supply">{formatPct(pool.apy)}</td>
-              <td className="number apy-borrow">{formatPct(pool.apyBorrow)}</td>
-              <td className="number">{pool.ltv > 0 ? formatPct(pool.ltv * 100) : "—"}</td>
+              <RateCell base={pool.apyBase} reward={pool.apyReward} total={pool.apy} kind="supply" />
+              <RateCell base={pool.apyBaseBorrow} reward={pool.apyRewardBorrow} total={pool.apyBorrow} kind="borrow" />
+              <td className="number">{pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"}</td>
             </tr>
           ))}
         </tbody>
