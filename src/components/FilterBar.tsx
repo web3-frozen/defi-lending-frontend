@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { AssetClass, Filters, ChainInfo, SymbolInfo } from "../types";
 import { chainLabel } from "../lib/format";
 
@@ -18,23 +18,33 @@ const MIN_TVL_OPTIONS = [
 ];
 
 export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBarProps) {
-  const [symbolDraft, setSymbolDraft] = useState(filters.symbol);
+  const [symbolDraft, setSymbolDraft] = useState("");
 
-  useEffect(() => {
-    setSymbolDraft(filters.symbol);
-  }, [filters.symbol]);
+  const addSymbols = (values: string[]) => {
+    const next = [...filters.symbols];
+    for (const value of values) {
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      const canonical =
+        symbols.find((item) => item.symbol.toLowerCase() === trimmed.toLowerCase())?.symbol ??
+        trimmed.toUpperCase();
+      if (!next.some((item) => item.toLowerCase() === canonical.toLowerCase())) {
+        next.push(canonical);
+      }
+    }
+    if (next.length !== filters.symbols.length) {
+      onFilterChange({ symbols: next });
+    }
+    setSymbolDraft("");
+  };
 
-  useEffect(() => {
-    if (symbolDraft === filters.symbol) return;
-    const timer = window.setTimeout(() => {
-      onFilterChange({ symbol: symbolDraft });
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [symbolDraft, filters.symbol, onFilterChange]);
+  const removeSymbol = (symbol: string) => {
+    onFilterChange({ symbols: filters.symbols.filter((item) => item !== symbol) });
+  };
 
   const filtersActive =
     filters.chain !== "" ||
-    filters.symbol !== "" ||
+    filters.symbols.length > 0 ||
     symbolDraft !== "" ||
     filters.assetClass !== "" ||
     filters.minTvl > 0;
@@ -58,19 +68,48 @@ export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBa
       </div>
 
       <div className="filter-group filter-grow">
-        <label htmlFor="asset-input">Asset</label>
-        <input
-          id="asset-input"
-          name="asset"
-          type="search"
-          inputMode="search"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="USDC"
-          value={symbolDraft}
-          list="asset-suggestions"
-          onChange={(e) => setSymbolDraft(e.target.value)}
-        />
+        <label htmlFor="asset-input">Assets</label>
+        <div className="asset-picker">
+          {filters.symbols.map((symbol) => (
+            <span className="asset-chip" key={symbol}>
+              {symbol}
+              <button
+                type="button"
+                className="chip-remove"
+                aria-label={`Remove ${symbol}`}
+                onClick={() => removeSymbol(symbol)}
+              >
+                &times;
+              </button>
+            </span>
+          ))}
+          <input
+            id="asset-input"
+            name="asset"
+            type="search"
+            inputMode="search"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={filters.symbols.length > 0 ? "Add asset" : "USDC, ETH..."}
+            value={symbolDraft}
+            list="asset-suggestions"
+            onChange={(e) => setSymbolDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                if (!symbolDraft.trim()) return;
+                e.preventDefault();
+                addSymbols([symbolDraft]);
+              } else if (
+                e.key === "Backspace" &&
+                symbolDraft === "" &&
+                filters.symbols.length > 0
+              ) {
+                e.preventDefault();
+                removeSymbol(filters.symbols[filters.symbols.length - 1]);
+              }
+            }}
+          />
+        </div>
         <datalist id="asset-suggestions">
           {symbols.map((item) => (
             <option key={item.symbol} value={item.symbol} />
@@ -129,7 +168,7 @@ export function FilterBar({ filters, chains, symbols, onFilterChange }: FilterBa
           setSymbolDraft("");
           onFilterChange({
             chain: "",
-            symbol: "",
+            symbols: [],
             assetClass: "",
             minTvl: 0,
           });

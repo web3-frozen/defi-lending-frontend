@@ -2,6 +2,10 @@ export interface Pool {
   id: string;
   chain: string;
   project: string;
+  protocolName?: string;
+  protocolUrl?: string;
+  protocolTwitter?: string;
+  protocolGithub?: string;
   symbol: string;
   tvl: number;
   apyBase: number | null;
@@ -42,7 +46,7 @@ export type AssetClass = "" | "stable" | "other";
 
 export interface Filters {
   chain: string;
-  symbol: string;
+  symbols: string[];
   assetClass: AssetClass;
   sortBy: SortField;
   order: SortOrder;

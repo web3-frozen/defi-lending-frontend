@@ -4,7 +4,7 @@ import { fetchPools, fetchChains, fetchSymbols } from "./api";
 
 export const DEFAULT_FILTERS: Filters = {
   chain: "",
-  symbol: "",
+  symbols: [],
   assetClass: "",
   sortBy: "tvl",
   order: "desc",

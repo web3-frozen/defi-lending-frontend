@@ -8,6 +8,10 @@ const mockPools: Pool[] = [
     id: "pool-1",
     chain: "ethereum",
     project: "aave-v3",
+    protocolName: "Aave V3",
+    protocolUrl: "https://aave.com",
+    protocolTwitter: "https://x.com/aave",
+    protocolGithub: "https://github.com/aave",
     symbol: "USDC",
     tvl: 2_000_000,
     apyBase: 3.5,
@@ -43,8 +47,24 @@ const mockPools: Pool[] = [
 describe("PoolTable", () => {
   it("renders pool rows", () => {
     render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
-    expect(screen.getByText("aave-v3")).toBeInTheDocument();
+    expect(screen.getByText("Aave V3")).toBeInTheDocument();
     expect(screen.getByText("marginfi")).toBeInTheDocument();
+  });
+
+  it("links the protocol and its social profiles", () => {
+    render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
+    expect(screen.getByRole("link", { name: "Aave V3" })).toHaveAttribute(
+      "href",
+      "https://aave.com"
+    );
+    expect(screen.getByRole("link", { name: "Aave V3 on X" })).toHaveAttribute(
+      "href",
+      "https://x.com/aave"
+    );
+    expect(screen.getByRole("link", { name: "Aave V3 on GitHub" })).toHaveAttribute(
+      "href",
+      "https://github.com/aave"
+    );
   });
 
   it("shows the supply equation as base plus reward", () => {

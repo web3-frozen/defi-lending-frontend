@@ -16,7 +16,10 @@ export default function App() {
   } = usePools();
 
   const canClear =
-    filters.chain !== "" || filters.symbol !== "" || filters.assetClass !== "" || filters.minTvl > 0;
+    filters.chain !== "" ||
+    filters.symbols.length > 0 ||
+    filters.assetClass !== "" ||
+    filters.minTvl > 0;
 
   return (
     <div className="app">
@@ -61,7 +64,7 @@ export default function App() {
             onClearFilters={() =>
               updateFilters({
                 chain: DEFAULT_FILTERS.chain,
-                symbol: DEFAULT_FILTERS.symbol,
+                symbols: DEFAULT_FILTERS.symbols,
                 assetClass: DEFAULT_FILTERS.assetClass,
                 minTvl: DEFAULT_FILTERS.minTvl,
               })
