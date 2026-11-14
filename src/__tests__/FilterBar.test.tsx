@@ -96,4 +96,31 @@ describe("FilterBar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Remove USDC" }));
     expect(onFilterChange).toHaveBeenCalledWith({ symbols: [] });
   });
+
+  it("adds the exact asset from the input button or blur", async () => {
+    const { rerender } = render(
+      <FilterBar
+        filters={defaultFilters}
+        chains={mockChains}
+        symbols={mockSymbols}
+        onFilterChange={onFilterChange}
+      />
+    );
+
+    await userEvent.type(screen.getByLabelText("Assets"), "USDC");
+    await userEvent.click(screen.getByRole("button", { name: "Add asset" }));
+    expect(onFilterChange).toHaveBeenCalledWith({ symbols: ["USDC"] });
+
+    rerender(
+      <FilterBar
+        filters={defaultFilters}
+        chains={mockChains}
+        symbols={mockSymbols}
+        onFilterChange={onFilterChange}
+      />
+    );
+    await userEvent.type(screen.getByLabelText("Assets"), "ETH");
+    await userEvent.tab();
+    expect(onFilterChange).toHaveBeenLastCalledWith({ symbols: ["ETH"] });
+  });
 });
