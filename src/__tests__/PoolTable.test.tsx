@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { PoolTable } from "../components/PoolTable";
-import type { Pool } from "../types";
+import type { Filters, Pool } from "../types";
 
 const mockPools: Pool[] = [
   {
@@ -49,6 +50,44 @@ describe("PoolTable", () => {
     render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
     expect(screen.getByText("Aave V3")).toBeInTheDocument();
     expect(screen.getByText("marginfi")).toBeInTheDocument();
+  });
+
+  it("copies the filtered table as markdown for AI", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const filters: Filters = {
+      chain: "ethereum",
+      symbols: ["USDC"],
+      assetClass: "",
+      sortBy: "tvl",
+      order: "desc",
+      minTvl: 0,
+      limit: 50,
+    };
+
+    render(
+      <PoolTable
+        pools={mockPools}
+        sortBy="tvl"
+        order="desc"
+        onToggleSort={vi.fn()}
+        filters={filters}
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Copy table" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+
+    const markdown = writeText.mock.calls[0][0] as string;
+    expect(markdown).toContain("| # | Protocol | Asset | Chain | TVL |");
+    expect(markdown).toContain("[Aave V3](https://aave.com)");
+    expect(markdown).toContain("assets=USDC");
+    expect(markdown).toContain("| 1 |");
+    expect(markdown).toContain("USDC");
+    await screen.findByRole("button", { name: "Copied" });
   });
 
   it("links the protocol and its social profiles", () => {

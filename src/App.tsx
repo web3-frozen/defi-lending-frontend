@@ -61,6 +61,7 @@ export default function App() {
             order={filters.order}
             onToggleSort={toggleSort}
             canClear={canClear}
+            filters={filters}
             onClearFilters={() =>
               updateFilters({
                 chain: DEFAULT_FILTERS.chain,
