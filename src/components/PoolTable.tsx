@@ -57,12 +57,16 @@ function RateCell({
   reward,
   total,
   kind,
+  average,
 }: {
   base: number | null;
   reward: number | null;
   total: number;
   kind: "supply" | "borrow";
+  average?: number | null;
 }) {
+  const averageNote =
+    average == null ? null : <span className="rate-note">30D avg {formatPct(average)}</span>;
   const known = base != null || reward != null;
   if (!known) {
     const label = kind === "borrow" ? "Borrow rate not reported" : `${formatPct(total)}, breakdown not reported`;
@@ -76,6 +80,7 @@ function RateCell({
             <span className="rate-note">Breakdown not reported</span>
           </>
         )}
+        {averageNote}
       </td>
     );
   }
@@ -99,6 +104,7 @@ function RateCell({
         <span className="rate-total">{formatPct(total)}</span>
       </span>
       {paid && <span className="rate-note">Paid to borrow</span>}
+      {averageNote}
     </td>
   );
 }
@@ -182,8 +188,8 @@ function toMarkdown(pools: Pool[], filters?: Filters): string {
     `Filters: ${filterSummary(filters) || "none"}`,
     `Rows: ${pools.length}`,
     "",
-    "| # | Protocol | Asset | Chain | TVL | Supply base | Supply reward | Supply total | Borrow interest | Borrow reward | Borrow total | LTV |",
-    "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| # | Protocol | Asset | Chain | TVL | Supply base | Supply reward | Supply total | 30D avg APY | Borrow interest | Borrow reward | Borrow total | LTV |",
+    "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
   ];
 
   pools.forEach((pool, index) => {
@@ -199,7 +205,7 @@ function toMarkdown(pools: Pool[], filters?: Filters): string {
       .join(" ");
 
     lines.push(
-      `| ${index + 1} | ${protocolCell} | ${escapeCell(pool.symbol)} | ${escapeCell(chainLabel(pool.chain))} | ${formatUSD(pool.tvl)} | ${rateValue(pool.apyBase)} | ${rateValue(pool.apyReward)} | ${formatPct(pool.apy)} | ${rateValue(pool.apyBaseBorrow)} | ${rateValue(pool.apyRewardBorrow)} | ${formatPct(pool.apyBorrow)} | ${pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"} |`
+      `| ${index + 1} | ${protocolCell} | ${escapeCell(pool.symbol)} | ${escapeCell(chainLabel(pool.chain))} | ${formatUSD(pool.tvl)} | ${rateValue(pool.apyBase)} | ${rateValue(pool.apyReward)} | ${formatPct(pool.apy)} | ${rateValue(pool.apyMean30d ?? null)} | ${rateValue(pool.apyBaseBorrow)} | ${rateValue(pool.apyRewardBorrow)} | ${formatPct(pool.apyBorrow)} | ${pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"} |`
     );
   });
 
@@ -303,7 +309,13 @@ export function PoolTable({
                 </td>
                 <td>{chainLabel(pool.chain)}</td>
                 <td className="number">{formatUSD(pool.tvl)}</td>
-                <RateCell base={pool.apyBase} reward={pool.apyReward} total={pool.apy} kind="supply" />
+                <RateCell
+                  base={pool.apyBase}
+                  reward={pool.apyReward}
+                  total={pool.apy}
+                  kind="supply"
+                  average={pool.apyMean30d}
+                />
                 <RateCell base={pool.apyBaseBorrow} reward={pool.apyRewardBorrow} total={pool.apyBorrow} kind="borrow" />
                 <td className="number">{pool.ltv > 0 ? formatPct(pool.ltv * 100) : "\u2014"}</td>
               </tr>
