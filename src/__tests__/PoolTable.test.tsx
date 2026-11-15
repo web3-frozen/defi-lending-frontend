@@ -83,7 +83,10 @@ describe("PoolTable", () => {
 
     const markdown = writeText.mock.calls[0][0] as string;
     expect(markdown).toContain("| # | Protocol | Asset | Chain | TVL |");
-    expect(markdown).toContain("[Aave V3](https://aave.com)");
+    expect(markdown).toContain(
+      "[Aave V3](https://defillama.com/yields/pool/pool-1)"
+    );
+    expect(markdown).toContain("[Site](https://aave.com)");
     expect(markdown).toContain("assets=USDC");
     expect(markdown).toContain("| 1 |");
     expect(markdown).toContain("USDC");
@@ -92,7 +95,13 @@ describe("PoolTable", () => {
 
   it("links the protocol and its social profiles", () => {
     render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
-    expect(screen.getByRole("link", { name: "Aave V3" })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: "Aave V3 USDC pool on DeFiLlama" })
+    ).toHaveAttribute(
+      "href",
+      "https://defillama.com/yields/pool/pool-1"
+    );
+    expect(screen.getByRole("link", { name: "Aave V3 official site" })).toHaveAttribute(
       "href",
       "https://aave.com"
     );
