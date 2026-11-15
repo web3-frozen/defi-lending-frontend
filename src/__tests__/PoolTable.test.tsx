@@ -18,6 +18,7 @@ const mockPools: Pool[] = [
     apyBase: 3.5,
     apyReward: 0.5,
     apy: 4.0,
+    apyMean30d: 3.25,
     apyBaseBorrow: 5.0,
     apyRewardBorrow: 0,
     apyBorrow: 5.0,
@@ -35,6 +36,7 @@ const mockPools: Pool[] = [
     apyBase: 6.0,
     apyReward: 1.0,
     apy: 7.0,
+    apyMean30d: 6.75,
     apyBaseBorrow: 8.0,
     apyRewardBorrow: 0.25,
     apyBorrow: 7.75,
@@ -87,6 +89,7 @@ describe("PoolTable", () => {
       "[Aave V3](https://defillama.com/yields/pool/pool-1)"
     );
     expect(markdown).toContain("[Site](https://aave.com)");
+    expect(markdown).toContain("30D avg APY");
     expect(markdown).toContain("assets=USDC");
     expect(markdown).toContain("| 1 |");
     expect(markdown).toContain("USDC");
@@ -120,6 +123,11 @@ describe("PoolTable", () => {
     expect(
       screen.getByRole("cell", { name: "3.50% base plus 0.50% reward, total 4.00%" })
     ).toBeInTheDocument();
+  });
+
+  it("shows the 30-day average supply APY", () => {
+    render(<PoolTable pools={mockPools} sortBy="tvl" order="desc" onToggleSort={vi.fn()} />);
+    expect(screen.getByText("30D avg 3.25%")).toBeInTheDocument();
   });
 
   it("shows borrow as interest minus reward", () => {

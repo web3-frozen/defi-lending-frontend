@@ -11,6 +11,7 @@ export interface Pool {
   apyBase: number | null;
   apyReward: number | null;
   apy: number;
+  apyMean30d?: number | null;
   apyBaseBorrow: number | null;
   apyRewardBorrow: number | null;
   apyBorrow: number;
@@ -40,7 +41,7 @@ export interface ProtocolInfo {
   totalTvl: number;
 }
 
-export type SortField = "tvl" | "apy" | "apyBorrow" | "ltv";
+export type SortField = "tvl" | "apy" | "apyMean30d" | "apyBorrow" | "ltv";
 export type SortOrder = "asc" | "desc";
 export type AssetClass = "" | "stable" | "other";
 
