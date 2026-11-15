@@ -105,18 +105,30 @@ function RateCell({
 
 function ProtocolCell({ pool }: { pool: Pool }) {
   const name = pool.protocolName ?? pool.project;
+  const poolUrl = `https://defillama.com/yields/pool/${encodeURIComponent(pool.id)}`;
 
   return (
     <td className="project">
-      {pool.protocolUrl ? (
-        <a href={pool.protocolUrl} target="_blank" rel="noreferrer">
-          {name}
-        </a>
-      ) : (
-        <span>{name}</span>
-      )}
-      {(pool.protocolTwitter || pool.protocolGithub) && (
+      <a
+        href={poolUrl}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`${name} ${pool.symbol} pool on DeFiLlama`}
+      >
+        {name}
+      </a>
+      {(pool.protocolUrl || pool.protocolTwitter || pool.protocolGithub) && (
         <span className="protocol-links">
+          {pool.protocolUrl && (
+            <a
+              href={pool.protocolUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${name} official site`}
+            >
+              Site
+            </a>
+          )}
           {pool.protocolTwitter && (
             <a
               href={pool.protocolTwitter}
@@ -176,8 +188,10 @@ function toMarkdown(pools: Pool[], filters?: Filters): string {
 
   pools.forEach((pool, index) => {
     const protocol = escapeCell(pool.protocolName ?? pool.project);
+    const poolUrl = `https://defillama.com/yields/pool/${encodeURIComponent(pool.id)}`;
     const protocolCell = [
-      pool.protocolUrl ? `[${protocol}](${pool.protocolUrl})` : protocol,
+      `[${protocol}](${poolUrl})`,
+      pool.protocolUrl ? `[Site](${pool.protocolUrl})` : "",
       pool.protocolTwitter ? `[X](${pool.protocolTwitter})` : "",
       pool.protocolGithub ? `[GitHub](${pool.protocolGithub})` : "",
     ]
