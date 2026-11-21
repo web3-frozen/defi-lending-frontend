@@ -9,7 +9,7 @@ FROM nginx/nginx-unprivileged:1.31.9-alpine
 
 # Patch OS packages in the nginx base image (trivy CRITICAL/HIGH gate)
 USER root
-RUN apk update --no-cache && apk upgrade --no-cache
+RUN apk update --no-cache && apk upgrade --no-cache --available
 USER nginx
 
 COPY --from=builder /app/dist /usr/share/nginx/html
